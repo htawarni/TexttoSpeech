@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="my">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>အသံကို စာသားပြောင်းပေးသော App</title>
+    <!-- Tailwind CSS ကို ထည့်သွင်းခြင်း -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Inter font ကို အသုံးပြုခြင်း */
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* Loading spinner အတွက် CSS */
+        .loader {
+            border: 4px solid #f3f3f3; /* Light grey */
+            border-top: 4px solid #3498db; /* Blue */
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+            vertical-align: middle;
+            margin-left: 8px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen flex items-center justify-center p-4">
+    <div class="bg-white p-8 rounded-xl shadow-lg w-full max-w-md text-center">
+        <h1 class="text-3xl font-bold text-gray-800 mb-6">အသံကို စာသားပြောင်းပေးသော App</h1>
+
+        <!-- API Key ထည့်သွင်းရန် နေရာ -->
+        <div class="mb-4 text-left">
+            <label for="apiKeyInput" class="block text-gray-700 text-sm font-bold mb-2">
+                Gemini API Key:
+            </label>
+            <div class="flex items-center">
+                <input type="password" id="apiKeyInput" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" placeholder="သင့် API Key ကို ထည့်ပါ">
+                <button id="setApiKeyButton" class="ml-2 bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg shadow-md transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-opacity-75 text-sm">
+                    သတ်မှတ်ရန်
+                </button>
+            </div>
+            <p id="apiKeyStatus" class="text-xs text-gray-500 mt-1">API Key ကို Browser တွင်သာ သိမ်းဆည်းထားမည်။</p>
+        </div>
+
+        <!-- စတင်/ရပ်ရန် ခလုတ် -->
+        <button id="startButton" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg shadow-md transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-75">
+            <span id="buttonText">စတင်ပြောပါ</span>
+            <span id="loadingSpinner" class="loader hidden"></span>
+        </button>
+
+        <!-- အခြေအနေပြ မက်ဆေ့ချ် -->
+        <p id="status" class="mt-4 text-gray-600 text-sm"></p>
+
+        <!-- စာသားပြသရန် နေရာ -->
+        <div class="mt-6">
+            <textarea id="output" class="w-full h-48 p-4 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 resize-none text-gray-800" placeholder="သင်ပြောသော စာသားများ ဤနေရာတွင် ပေါ်လာပါမည်... သို့မဟုတ် စာရိုက်ထည့်နိုင်ပါသည်..."></textarea>
+        </div>
+
+        <div class="mt-4 flex flex-wrap justify-center gap-4">
+            <!-- စာသားရှင်းလင်းရန် ခလုတ် -->
+            <button id="clearButton" class="bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-4 rounded-lg shadow-md transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-opacity-75">
+                ရှင်းလင်းရန်
+            </button>
+            <!-- ကော်ပီကူးရန် ခလုတ် -->
+            <button id="copyButton" class="bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-4 rounded-lg shadow-md transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-green-400 focus:ring-opacity-75">
+                ကော်ပီကူးရန်
+            </button>
+            <!-- အနှစ်ချုပ်ရန် ခလုတ် -->
+            <button id="summarizeButton" class="bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-4 rounded-lg shadow-md transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-opacity-75">
+                <span class="mr-2">✨</span>အနှစ်ချုပ်ရန်
+            </button>
+            <!-- အင်္ဂလိပ်လို ဘာသာပြန်ရန် ခလုတ် -->
+            <button id="translateButton" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-4 rounded-lg shadow-md transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-75">
+                <span class="mr-2">✨</span>အင်္ဂလိပ်လို ဘာသာပြန်ရန်
+            </button>
+            <!-- စိတ်ခံစားမှု ခွဲခြမ်းစိတ်ဖြာရန် ခလုတ် -->
+            <button id="sentimentButton" class="bg-pink-600 hover:bg-pink-700 text-white font-semibold py-2 px-4 rounded-lg shadow-md transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:ring-opacity-75">
+                <span class="mr-2">✨</span>စိတ်ခံစားမှု ခွဲခြမ်းစိတ်ဖြာရန်
+            </button>
+            <!-- သော့ချက်စကားလုံးများ ထုတ်ယူရန် ခလုတ် -->
+            <button id="keywordsButton" class="bg-teal-600 hover:bg-teal-700 text-white font-semibold py-2 px-4 rounded-lg shadow-md transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-opacity-75">
+                <span class="mr-2">✨</span>သော့ချက်စကားလုံးများ ထုတ်ယူရန်
+            </button>
+            <!-- မျှဝေရန် ခလုတ် -->
+            <button id="shareButton" class="bg-yellow-600 hover:bg-yellow-700 text-white font-semibold py-2 px-4 rounded-lg shadow-md transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-opacity-75">
+                <span class="mr-2">🔗</span>မျှဝေရန်
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // DOM element များကို ရယူခြင်း
+        const startButton = document.getElementById('startButton');
+        const buttonText = document.getElementById('buttonText');
+        const loadingSpinner = document.getElementById('loadingSpinner');
+        const statusDiv = document.getElementById('status');
+        const outputTextarea = document.getElementById('output');
+        const clearButton = document.getElementById('clearButton');
+        const copyButton = document.getElementById('copyButton');
+        const summarizeButton = document.getElementById('summarizeButton');
+        const translateButton = document.getElementById('translateButton');
+        const sentimentButton = document.getElementById('sentimentButton');
+        const keywordsButton = document.getElementById('keywordsButton');
+        const apiKeyInput = document.getElementById('apiKeyInput');
+        const setApiKeyButton = document.getElementById('setApiKeyButton');
+        const apiKeyStatus = document.getElementById('apiKeyStatus');
+        const shareButton = document.getElementById('shareButton');
+
+        // SpeechRecognition API ကို စစ်ဆေးခြင်း
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        let recognition;
+        let isRecording = false; // မှတ်တမ်းတင်နေသည့် အခြေအနေကို ခြေရာခံရန်
+        let isStarting = false; // recognition.start() ခေါ်နေဆဲလား စစ်ဆေးရန်
+        let currentFinalTranscriptSegments = []; // လက်ရှိရရှိထားသော final transcript များကို Array အဖြစ် သိမ်းဆည်းရန်
+        let lastFinalResultIndex = -1; // နောက်ဆုံး process လုပ်ပြီးသော final result ၏ index ကို မှတ်သားရန်
+
+        // Gemini API key (Canvas environment မှ အလိုအလျောက် ပံ့ပိုးပေးပါမည်။ သို့မဟုတ် user မှ ထည့်သွင်းထားသော key ကို အသုံးပြုပါမည်။)
+        let userProvidedApiKey = localStorage.getItem('geminiApiKey') || ""; // Local Storage မှ API Key ကို ရယူခြင်း
+
+        // API Key Input Field ကို Local Storage မှ တန်ဖိုးဖြင့် ဖြည့်သွင်းခြင်း
+        if (userProvidedApiKey) {
+            apiKeyInput.value = userProvidedApiKey;
+            apiKeyStatus.textContent = 'API Key ကို သတ်မှတ်ထားပြီးဖြစ်သည်။';
+        } else {
+            apiKeyStatus.textContent = 'API Key ကို ထည့်သွင်းရန် လိုအပ်နိုင်သည်။';
+        }
+
+        // ခလုတ်အားလုံးကို disabled/enabled လုပ်ရန် helper function
+        function toggleButtons(disable) {
+            // SpeechRecognition မရရှိရင် startButton ကို အမြဲတမ်းပိတ်ထားပါ
+            if (SpeechRecognition) {
+                startButton.disabled = disable;
+            } else {
+                startButton.disabled = true; // SpeechRecognition မရှိရင် startButton ကို အမြဲပိတ်ထား
+            }
+            clearButton.disabled = disable;
+            copyButton.disabled = disable;
+            summarizeButton.disabled = disable;
+            translateButton.disabled = disable;
+            sentimentButton.disabled = disable;
+            keywordsButton.disabled = disable;
+            setApiKeyButton.disabled = disable; // API Key သတ်မှတ်ရန် ခလုတ်ကိုလည်း ပိတ်/ဖွင့်
+            shareButton.disabled = disable; // Share ခလုတ်ကိုလည်း ပိတ်/ဖွင့်
+        }
+
+        // Gemini API မှ စာလုံးပေါင်းစစ်ဆေးရန် function
+        async function callGeminiAPI(promptText, currentOperationStatus) {
+            if (!promptText.trim()) {
+                console.log("Gemini API call: Input text is empty.");
+                return "";
+            }
+            console.log(`Gemini API call for ${currentOperationStatus}: Original text for API:`, promptText);
+
+            toggleButtons(true); // ခလုတ်အားလုံးကို ပိတ်ထားခြင်း
+            loadingSpinner.classList.remove('hidden'); // Loading spinner ကို ပြသခြင်း
+            statusDiv.textContent = `${currentOperationStatus}နေပါသည်...`;
+
+            // အသုံးပြုသူထည့်သွင်းထားသော API Key ကို အသုံးပြုခြင်း၊ မရှိပါက Canvas မှ ပံ့ပိုးပေးသော key (empty string) ကို အသုံးပြုခြင်း
+            const actualApiKey = userProvidedApiKey || "";
+            if (!actualApiKey) {
+                statusDiv.textContent = `API Key မရှိပါက ${currentOperationStatus} လုပ်ဆောင်၍ မရပါ။ ကျေးဇူးပြု၍ API Key ကို ထည့်သွင်းပြီး 'သတ်မှတ်ရန်' ခလုတ်ကို နှိပ်ပါ။`;
+                loadingSpinner.classList.add('hidden');
+                toggleButtons(false);
+                return promptText; // API Key မရှိရင် မူရင်းစာသားကို ပြန်ပေး
+            }
+
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${actualApiKey}`;
+
+            let chatHistory = [];
+            chatHistory.push({ role: "user", parts: [{ text: promptText }] });
+
+            const payload = { contents: chatHistory };
+
+            try {
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const result = await response.json();
+                console.log(`Gemini API call for ${currentOperationStatus}: API response:`, result);
+
+                if (response.status === 400 && result.error) {
+                    if (result.error.status === "FAILED_PRECONDITION" && result.error.message.includes("User location is not supported")) {
+                        // Specific error for unsupported location
+                        statusDiv.textContent = `API အသုံးပြုခွင့်မရှိသော နေရာမှ ခေါ်ဆိုခြင်းဖြစ်သည်။ VPN အသုံးပြု၍ ပြန်လည်စမ်းသပ်ပါ။`;
+                        console.error("User location is not supported for the API use. Please use a VPN.");
+                    } else if (result.error.status === "INVALID_ARGUMENT" && result.error.message.includes("API key not valid")) {
+                        // Specific error for invalid API key
+                        statusDiv.textContent = `API Key မမှန်ကန်ပါ။ ကျေးဇူးပြု၍ မှန်ကန်သော API Key ကို ထည့်သွင်းပြီး 'သတ်မှတ်ရန်' ခလုတ်ကို နှိပ်ပါ။`;
+                        console.error("API key not valid. Please pass a valid API key.");
+                    } else {
+                        // Other 400 errors
+                        statusDiv.textContent = `${currentOperationStatus}ရာတွင် ပြဿနာရှိခဲ့ပါသည်။ Error: ${result.error.message}`;
+                        console.error(`Gemini API မှ တုံ့ပြန်မှု မျှော်လင့်မထားပါ။ (${currentOperationStatus})`, result);
+                    }
+                    return promptText; // Return original text as API call failed
+                }
+                
+                if (result.candidates && result.candidates.length > 0 &&
+                    result.candidates[0].content && result.candidates[0].content.parts &&
+                    result.candidates[0].content.parts.length > 0) {
+                    const processedText = result.candidates[0].content.parts[0].text.trim();
+                    statusDiv.textContent = `${currentOperationStatus}ပြီးပါပြီ။`;
+                    console.log(`${currentOperationStatus}: Processed text:`, processedText);
+                    return processedText;
+                } else {
+                    console.error(`Gemini API မှ တုံ့ပြန်မှု မျှော်လင့်မထားပါ။ (${currentOperationStatus})`, result);
+                    statusDiv.textContent = `${currentOperationStatus}ရာတွင် ပြဿနာရှိခဲ့ပါသည်။`;
+                    return promptText; // မှန်ကန်သော တုံ့ပြန်မှု မရပါက မူရင်းစာသားကို ပြန်ပေးပါမည်။
+                }
+            } catch (error) {
+                console.error(`Gemini API ကို ခေါ်ဆိုရာတွင် အမှားဖြစ်ပွား (${currentOperationStatus}):`, error);
+                statusDiv.textContent = `API ခေါ်ဆိုမှု အမှားဖြစ်ပွား: ${error.message}`;
+                return promptText; // API ခေါ်ဆိုမှု အမှားဖြစ်ပါက မူရင်းစာသားကို ပြန်ပေးပါမည်။
+            } finally {
+                loadingSpinner.classList.add('hidden'); // Loading spinner ကို ဖျောက်ခြင်း
+                toggleButtons(false); // ခလုတ်အားလုံးကို ပြန်ဖွင့်ခြင်း
+            }
+        }
+
+        // စာလုံးပေါင်းစစ်ဆေးရန် function
+        async function correctSpelling(text) {
+            const prompt = `အောက်ပါစာသား၏ စာလုံးပေါင်းနှင့် သဒ္ဒါကို မှန်ကန်အောင် ပြင်ဆင်ပေးပါ။ အကယ်၍ စာသားသည် မြန်မာဘာသာဖြစ်ပါက မြန်မာဘာသာဖြင့် ပြင်ဆင်ပါ။ အင်္ဂလိပ်ဘာသာဖြစ်ပါက အင်္ဂလိပ်ဘာသာဖြင့် ပြင်ဆင်ပါ။ ပြင်ဆင်ထားသော စာသားကိုသာ ပြန်ပေးပါ။ အခြားမည်သည့်အရာမှ မထည့်ပါနှင့်။`;
+            return await callGeminiAPI(prompt + '\n\n' + text, 'စာလုံးပေါင်းစစ်ဆေး');
+        }
+
+        // စာသားအနှစ်ချုပ်ရန် function
+        async function summarizeText(text) {
+            const prompt = `အောက်ပါစာသားကို အကျဉ်းချုပ်ပေးပါ။ အရေးကြီးဆုံး အချက်အလက်များကိုသာ ထည့်သွင်းပါ။\n\n${text}`;
+            return await callGeminiAPI(prompt, 'စာသားအနှစ်ချုပ်');
+        }
+
+        // စာသားဘာသာပြန်ရန် function
+        async function translateText(text, targetLanguage) {
+            const prompt = `အောက်ပါစာသားကို ${targetLanguage} ဘာသာသို့ ဘာသာပြန်ပေးပါ။ ဘာသာပြန်ထားသော စာသားကိုသာ ပြန်ပေးပါ။ အခြားမည်သည့်အရာမှ မထည့်ပါနှင့်။\n\n${text}`;
+            return await callGeminiAPI(prompt, `${targetLanguage} ဘာသာသို့ ဘာသာပြန်`);
+        }
+
+        // စိတ်ခံစားမှု ခွဲခြမ်းစိတ်ဖြာရန် function
+        async function analyzeSentiment(text) {
+            const prompt = `အောက်ပါစာသား၏ စိတ်ခံစားမှု (ဥပမာ: အပြုသဘော, အနုတ်သဘော, ကြားနေ) ကို ခွဲခြမ်းစိတ်ဖြာပြီး တိုတိုရှင်းရှင်း ဖော်ပြပေးပါ။\n\n${text}`;
+            return await callGeminiAPI(prompt, 'စိတ်ခံစားမှု ခွဲခြမ်းစိတ်ဖြာ');
+        }
+
+        // သော့ချက်စကားလုံးများ ထုတ်ယူရန် function
+        async function extractKeywords(text) {
+            const prompt = `အောက်ပါစာသားမှ အဓိက သော့ချက်စကားလုံးများ (keywords) ကို ထုတ်ယူပြီး comma (,) ဖြင့် ခွဲခြား၍ စာရင်းပြုစုပေးပါ။\n\n${text}`;
+            return await callGeminiAPI(prompt, 'သော့ချက်စကားလုံးများ ထုတ်ယူ');
+        }
+
+
+        // SpeechRecognition API ကို စတင်ခြင်း
+        if (SpeechRecognition) {
+            recognition = new SpeechRecognition();
+            recognition.continuous = true; // စဉ်ဆက်မပြတ် မှတ်တမ်းတင်ခြင်း
+            recognition.interimResults = true; // ယာယီရလဒ်များကို ပြသခြင်း
+            recognition.lang = 'my-MM'; // မြန်မာဘာသာစကားကို သတ်မှတ်ခြင်း (လိုအပ်ပါက 'en-US' သို့ ပြောင်းနိုင်သည်)
+
+            // အသံမှတ်တမ်းတင်ခြင်း စတင်သည့်အခါ
+            recognition.onstart = () => {
+                isRecording = true;
+                isStarting = false; // စတင်ပြီးစီးကြောင်း မှတ်သား
+                buttonText.textContent = 'မှတ်တမ်းတင်နေသည်... ရပ်ရန်နှိပ်ပါ'; // ခလုတ်စာသားပြောင်းလဲခြင်း
+                startButton.classList.remove('bg-blue-600');
+                startButton.classList.add('bg-red-600'); // ခလုတ်အရောင်ပြောင်းလဲခြင်း
+                statusDiv.textContent = 'နားထောင်နေပါသည်။';
+                toggleButtons(true); // မှတ်တမ်းတင်နေစဉ် ခလုတ်အားလုံးကို ပိတ်ထားပါ
+                startButton.disabled = false; // Start button ကိုတော့ ဖွင့်ထားပါ (ရပ်ဖို့)
+                currentFinalTranscriptSegments = []; // အသစ်စတင်တိုင်း final transcript segments များကို ရှင်းလင်းခြင်း
+                outputTextarea.value = ''; // output textarea ကိုလည်း ရှင်းလင်းခြင်း
+                lastFinalResultIndex = -1; // အသစ်စတင်တိုင်း index ကို ပြန်လည်သတ်မှတ်
+                console.log('Speech recognition started.');
+            };
+
+            // အသံမှတ်တမ်းတင်ခြင်း ရပ်တန့်သည့်အခါ
+            recognition.onend = () => {
+                isRecording = false;
+                isStarting = false; // စတင်ပြီးစီးကြောင်း မှတ်သား
+                buttonText.textContent = 'စတင်ပြောပါ'; // ခလုတ်စာသားပြောင်းလဲခြင်း
+                startButton.classList.remove('bg-red-600');
+                startButton.classList.add('bg-blue-600'); // ခလုတ်အရောင်ပြောင်းလဲခြင်း
+                statusDiv.textContent = 'မှတ်တမ်းတင်ခြင်း ရပ်သွားပါပြီ။';
+                toggleButtons(false); // မှတ်တမ်းတင်ခြင်း ပြီးစီးပါက ခလုတ်အားလုံးကို ပြန်ဖွင့်ပါ
+                console.log('Speech recognition ended.');
+            };
+
+            // အမှားအယွင်း ဖြစ်ပေါ်သည့်အခါ
+            recognition.onerror = (event) => {
+                statusDiv.textContent = `အမှားအယွင်းဖြစ်ပွား: ${event.error}`;
+                isRecording = false;
+                isStarting = false; // စတင်ပြီးစီးကြောင်း မှတ်သား
+                buttonText.textContent = 'စတင်ပြောပါ';
+                startButton.classList.remove('bg-red-600');
+                startButton.classList.add('bg-blue-600');
+                console.error('Speech recognition error:', event.error);
+                // အမှားဖြစ်ရင် မှတ်တမ်းတင်တာကို ရပ်ပြီး ပြန်စဖို့ အသင့်ဖြစ်အောင် လုပ်ပေး
+                recognition.stop(); // အမှားဖြစ်ရင် မှတ်တမ်းတင်တာကို ရပ်လိုက်ပါ
+                toggleButtons(false); // အမှားဖြစ်ရင် ခလုတ်အားလုံးကို ပြန်ဖွင့်ပါ
+            };
+
+            // ရလဒ်များ ရရှိသည့်အခါ
+            recognition.onresult = async (event) => { // async function အဖြစ် ပြောင်းလဲ
+                let interimTranscript = '';
+                let newFinalSegment = ''; // This will be the *new* final segment from this specific event
+
+                // Iterate through all results from this event
+                for (let i = event.resultIndex; i < event.results.length; i++) {
+                    const transcript = event.results[i][0].transcript;
+                    if (event.results[i].isFinal) {
+                        // Only add to newFinalSegment if it's a new final result not yet processed
+                        if (i > lastFinalResultIndex) {
+                            newFinalSegment += transcript + ' ';
+                            lastFinalResultIndex = i; // Update the last processed final index
+                        }
+                    } else {
+                        interimTranscript = transcript; // Only keep the very latest interim part
+                    }
+                }
+
+                console.log("onresult: new final segment (before correction):", newFinalSegment.trim());
+                console.log("onresult: current interim (for display):", interimTranscript);
+                console.log("onresult: lastFinalResultIndex:", lastFinalResultIndex);
+
+                // Process new final segment if available
+                if (newFinalSegment.t
